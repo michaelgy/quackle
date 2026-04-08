@@ -133,6 +133,37 @@ class Quackle::V1LexiconInterpreter : public LexiconInterpreter
 	virtual int versionNumber() const { return 1; }
 };
 
+class Quackle::V2LexiconInterpreter : public V1LexiconInterpreter
+{
+	virtual void loadGaddag(ifstream &file, LexiconParameters &lexparams)
+	{
+		char hash[16];
+		file.get(); // skip version byte
+		file.read(hash, sizeof(hash));
+		if (memcmp(hash, lexparams.m_hash, sizeof(hash)))
+		{
+			// If we're using a v0 DAWG, then ignore the hash
+			for (size_t i = 0; i < sizeof(lexparams.m_hash); i++)
+			{
+				if (lexparams.m_hash[i] != 0)
+				{
+					lexparams.unloadGaddag(); // don't use a mismatched gaddag
+					return;
+				}
+			}
+		}
+
+		size_t i = 0;
+		while (!file.eof())
+		{
+			file.read((char*)(lexparams.m_gaddag) + i, 5); // 5 bytes per node (v2)
+			i += 5;
+		}
+	}
+
+	virtual int versionNumber() const { return 2; }
+};
+
 LexiconParameters::LexiconParameters()
 	: m_dawg(NULL), m_gaddag(NULL), m_interpreter(NULL)
 {
@@ -284,6 +315,8 @@ LexiconInterpreter* LexiconParameters::createInterpreter(char version) const
 			return new V0LexiconInterpreter();
 		case 1:
 			return new V1LexiconInterpreter();
+		case 2:
+			return new V2LexiconInterpreter();
 		default:
 			return NULL;
 	}

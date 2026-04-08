@@ -240,6 +240,33 @@ LetterString AlphabetParameters::encode(const UVString &word, UVString *leftover
 	return ret;
 }
 
+LetterString AlphabetParameters::encodeTiles(const UVString &word) const
+{
+	LetterString ret;
+	UVString leftoverQuery;
+	LetterLookupMap::const_iterator lookupEnd = m_letterLookup.end();
+	const UVString::const_iterator end(word.end());
+
+	for (UVString::const_iterator it = word.begin(); it != end; ++it)
+	{
+		UVString query(leftoverQuery);
+		query += *it;
+
+		LetterLookupMap::const_iterator lookupIt = m_letterLookup.find(query);
+		if (lookupIt != lookupEnd)
+		{
+			ret += m_alphabet[lookupIt->second].letter();
+			leftoverQuery.clear();
+		}
+		else
+		{
+			leftoverQuery = query;
+		}
+	}
+	// leftoverQuery is silently discarded (unrecognized / incomplete sequences)
+	return ret;
+}
+
 string AlphabetParameters::findAlphabetFile(const string &alphabet)
 {
 	return DataManager::self()->findDataFile("alphabets", alphabet + ".quackle_alphabet");

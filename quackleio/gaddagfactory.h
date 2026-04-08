@@ -25,10 +25,9 @@
 
 using std::vector;
 
-// This isn't a strict maximum...you can go higher...but too much higher, and you risk overflowing
-// node pointers, which will get you garbage words.  The OSPS dictionary is known to trigger
-// such overflows.
-const int QUACKLE_MAX_GADDAG_WORDCOUNT = 500000;
+// Maximum number of words for GADDAG construction. The 32-bit node pointer format
+// supports up to ~4 billion nodes, sufficient for any practical lexicon.
+const int QUACKLE_MAX_GADDAG_WORDCOUNT = 4000000;
 
 class GaddagFactory {
 public:

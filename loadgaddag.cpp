@@ -30,9 +30,10 @@ unsigned char *dawg;
 
 void spit(int i, string prefix, char counts[29]) {
 
-    int index = i * 4;
-    unsigned int p = (dawg[index] << 16) + (dawg[index + 1] << 8) + (dawg[index + 2]);
-    char c = dawg[index + 3];     
+    int index = i * 5;
+    unsigned int p = ((unsigned int)dawg[index] << 24) + ((unsigned int)dawg[index + 1] << 16)
+                   + ((unsigned int)dawg[index + 2] << 8) + (unsigned int)dawg[index + 3];
+    char c = dawg[index + 4];
 
     bool t = false;
     bool lastchild = false;

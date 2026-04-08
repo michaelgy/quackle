@@ -16,6 +16,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
 #include <sstream>
 #include <QtWidgets>
 
@@ -118,7 +119,27 @@ LexiconDialog::LexiconDialog(QWidget *parent, const QString &originalName) : QDi
 	setWindowTitle(tr("Configure Lexicon - Quackle"));
 
 	Settings::populateComboFromFilenames(m_alphabetCombo, "alphabets", ".quackle_alphabet", "");
-	m_alphabetCombo->setCurrentIndex(m_alphabetCombo->findText(QuackleIO::Util::stdStringToQString(QUACKLE_ALPHABET_PARAMETERS->alphabetName())));
+
+	// Try to restore the alphabet previously saved for this lexicon via sidecar file
+	bool restoredAlphabet = false;
+	if (!m_originalName.isEmpty())
+	{
+		string sidecarFile = QUACKLE_DATAMANAGER->findDataFile("lexica", m_originalName.toStdString() + ".quackle_alphabet_link");
+		if (!sidecarFile.empty())
+		{
+			std::ifstream f(sidecarFile);
+			string savedAlphabet;
+			std::getline(f, savedAlphabet);
+			int idx = m_alphabetCombo->findText(QString::fromStdString(savedAlphabet));
+			if (idx >= 0)
+			{
+				m_alphabetCombo->setCurrentIndex(idx);
+				restoredAlphabet = true;
+			}
+		}
+	}
+	if (!restoredAlphabet)
+		m_alphabetCombo->setCurrentIndex(m_alphabetCombo->findText(QuackleIO::Util::stdStringToQString(QUACKLE_ALPHABET_PARAMETERS->alphabetName())));
 	alphabetChanged(m_alphabetCombo->currentIndex());
 
 	m_lexiconName->setValidator(m_fileNameValidator);
@@ -208,6 +229,42 @@ void LexiconDialog::addWordsFromDawgRecursive(const LexiconParameters &lexParams
 	} while (!lastchild);
 }
 
+// Returns all variants of 'word' (all-uppercase) with CH/LL/RR substituted as
+// lowercase digraph sequences. The original unchanged form is NOT included —
+// the caller always pushes that itself. Each substitution position is
+// non-overlapping; all 2^n combinations are returned (n = digraph count).
+static QVector<QString> generateDigraphVariants(const QString &word)
+{
+	struct Occurrence { int pos; QString lower; };
+	QVector<Occurrence> occurrences;
+	for (int i = 0; i < word.size() - 1; i++)
+	{
+		QString pair = word.mid(i, 2);
+		if (pair == "CH" || pair == "LL" || pair == "RR")
+		{
+			occurrences.append({i, pair.toLower()});
+			i++; // skip second char of digraph (non-overlapping)
+		}
+	}
+	if (occurrences.isEmpty())
+		return {};
+
+	QVector<QString> variants;
+	int n = occurrences.size();
+	for (int mask = 1; mask < (1 << n); mask++)
+	{
+		QString variant = word;
+		// Apply right-to-left so earlier positions stay valid after replacements
+		for (int j = n - 1; j >= 0; j--)
+		{
+			if (mask & (1 << j))
+				variant.replace(occurrences[j].pos, 2, occurrences[j].lower);
+		}
+		variants.append(variant);
+	}
+	return variants;
+}
+
 void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 {
 	if (!m_wordFactory)
@@ -219,16 +276,19 @@ void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 
 	QTextStream stream(&file);
 	SET_QTEXTSTREAM_TO_UTF8(stream);
-	QString word;
 	while (!stream.atEnd())
 	{
-		stream >> word;
-		word = word.trimmed().toUpper();
-		if (word.isEmpty())
+		QString line = stream.readLine().trimmed().toUpper();
+		if (line.isEmpty())
 			continue;
-		QChar firstChar = word[0];
-		if (firstChar < 'A')
-			continue; // allows the usage of most punctuation characters as comments
+		QChar firstChar = line[0];
+		if (firstChar != QChar(0xD1) /*Ñ*/ && firstChar < 'A')
+			continue; // allows most punctuation characters as comments
+
+		// Some word lists encode Ñ as a space (e.g. "CA A" = "CAÑA", "AMU U A" = "AMUÑUÑA").
+		// Restore those spaces to Ñ before encoding.
+		QString word = line.replace(' ', QChar(0xD1) /*Ñ*/);
+
 		int playability = 0;
 		for (int i = int(word.size()) - 1; i > 0; i--)
 		{
@@ -236,6 +296,17 @@ void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 				playability = playability * 10 + word[i].digitValue();
 		}
 		m_wordFactory->pushWord(QuackleIO::Util::qstringToString(word), true, playability);
+
+		// Also push digraph variants (ch/ll/rr) for combined-alphabet support.
+		// Use encodeTiles() + LetterString overload so lowercase digraph sequences
+		// are encoded as single tiles, not blank tiles.
+		for (const QString &variant : generateDigraphVariants(word))
+		{
+			Quackle::LetterString encoded = QUACKLE_ALPHABET_PARAMETERS->encodeTiles(
+				QuackleIO::Util::qstringToString(variant));
+			if (!encoded.empty())
+				m_wordFactory->pushWord(encoded, true, playability);
+		}
 	}
 }
 
@@ -272,6 +343,17 @@ void LexiconDialog::accept()
 	m_lexiconInformation->setText(tr("Writing dictionary file..."));
 	qApp->processEvents();
 	m_wordFactory->writeIndex(filename);
+
+	// Write alphabet sidecar so the lexicon auto-loads the right alphabet next time
+	QString alphabetLinkFile = QString::fromStdString(
+		QUACKLE_DATAMANAGER->makeDataFilename("lexica", lexiconNameStr + ".quackle_alphabet_link", true));
+	QFile linkFile(alphabetLinkFile);
+	if (linkFile.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QTextStream out(&linkFile);
+		out << m_alphabetCombo->currentText();
+	}
+
 	m_finalLexiconName = m_lexiconName->text();
 	QDialog::accept();
 }

@@ -1,0 +1,32 @@
+# Spanish Scrabble Alphabet - Classic (pre-1994 rules)
+# Includes CH, LL, and RR as single tiles
+# 106 tiles total
+A	a	1	12	1
+B	b	3	2	0
+C	c	3	4	0
+CH	ch	5	1	0
+D	d	2	5	0
+E	e	1	12	1
+F	f	4	1	0
+G	g	2	2	0
+H	h	4	2	0
+I	i	1	6	1
+J	j	8	1	0
+L	l	1	4	0
+LL	ll	8	1	0
+M	m	3	2	0
+N	n	1	5	0
+Ñ	ñ	8	1	0
+O	o	1	9	1
+P	p	3	2	0
+Q	q	5	1	0
+R	r	1	5	0
+RR	rr	8	1	0
+S	s	1	6	0
+T	t	1	4	0
+U	u	1	5	1
+V	v	4	1	0
+X	x	8	1	0
+Y	y	4	1	0
+Z	z	10	1	0
+blank	0	2

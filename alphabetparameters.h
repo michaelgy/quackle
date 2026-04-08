@@ -274,9 +274,16 @@ public:
 	UVString userVisible(const LetterString &letterString) const;
 	UVString userVisible(Letter letter) const;
 
-	// UVString -> LetterString. Letters that could not be encoded are 
+	// UVString -> LetterString. Letters that could not be encoded are
 	// stored in leftover if it is non-null.
 	LetterString encode(const UVString &word, UVString *leftover = 0) const;
+
+	// Like encode(), but uses mixed-case tile notation:
+	// uppercase chars are emitted as individual tiles immediately;
+	// consecutive lowercase chars are accumulated and emitted as a
+	// single digraph tile (e.g. "ch", "ll", "rr" with spanish_combined).
+	// Blank-tile semantics (blankText lookup) are intentionally skipped.
+	LetterString encodeTiles(const UVString &word) const;
 
 	// a convenience field; this is unused by libquackle
 	string alphabetName() const;

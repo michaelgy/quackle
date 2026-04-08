@@ -16,6 +16,7 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 
@@ -261,17 +262,12 @@ void Settings::buildGaddag()
 
 	setGaddagLabel(tr("Words processed: 0"));
 	pushIndex(factory, word, 1, wordCount);
-	if (wordCount < QUACKLE_MAX_GADDAG_WORDCOUNT)
-	{
-		setGaddagLabel(QString(tr("Lexicon total: %1 words.  Compressing...")).arg(wordCount));
-		factory.generate();
-		setGaddagLabel(QString(tr("Lexicon total: %1 words.  Writing to disk...")).arg(wordCount));
-		factory.writeIndex(gaddagFile);
-		QUACKLE_LEXICON_PARAMETERS->loadGaddag(gaddagFile);
-		setGaddagLabel();
-	}
-	else
-		setGaddagLabel(tr("Your lexicon is too large to be represented using the internal database format.  Operation aborted."));
+	setGaddagLabel(QString(tr("Lexicon total: %1 words.  Compressing...")).arg(wordCount));
+	factory.generate();
+	setGaddagLabel(QString(tr("Lexicon total: %1 words.  Writing to disk...")).arg(wordCount));
+	factory.writeIndex(gaddagFile);
+	QUACKLE_LEXICON_PARAMETERS->loadGaddag(gaddagFile);
+	setGaddagLabel();
 }
 
 void Settings::pushIndex(GaddagFactory &factory, Quackle::LetterString &word, int index, int &wordCount)
@@ -293,14 +289,10 @@ void Settings::pushIndex(GaddagFactory &factory, Quackle::LetterString &word, in
 			wordCount++;
 			if (wordCount % 1000 == 0)
 				setGaddagLabel(QString(tr("Words processed: %1")).arg(wordCount));
-			if (wordCount > QUACKLE_MAX_GADDAG_WORDCOUNT)
-				return;
 		}
 		if (p)
 		{
 			pushIndex(factory, word, p, wordCount);
-			if (wordCount > QUACKLE_MAX_GADDAG_WORDCOUNT)
-				return;
 		}
 		index++;
 		word.pop_back();
@@ -340,6 +332,25 @@ void Settings::setQuackleToUseLexiconName(const QString &lexiconName)
 		}
 		else
 			QUACKLE_LEXICON_PARAMETERS->loadGaddag(gaddagFile);
+
+		// Auto-load the alphabet associated with this lexicon if a sidecar file exists
+		string alphabetLinkFile = Quackle::LexiconParameters::findDictionaryFile(lexiconNameStr + ".quackle_alphabet_link");
+		if (!alphabetLinkFile.empty())
+		{
+			ifstream f(alphabetLinkFile);
+			string alphabetName;
+			getline(f, alphabetName);
+			if (!alphabetName.empty())
+			{
+				string alphabetFile = Quackle::AlphabetParameters::findAlphabetFile(alphabetName);
+				if (!alphabetFile.empty())
+				{
+					QuackleIO::FlexibleAlphabetParameters *flexure = new QuackleIO::FlexibleAlphabetParameters;
+					flexure->load(QuackleIO::Util::stdStringToQString(alphabetFile));
+					QUACKLE_DATAMANAGER->setAlphabetParameters(flexure);
+				}
+			}
+		}
 
 		// Dirty test to see if we're working with an English-like dictionary, and if so, beef up
 		// strategy files with twl06 ones (until I can start generating better).  It's an imperfect

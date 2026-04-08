@@ -64,6 +64,9 @@ public:
 	// encode as above but clear blankess of all letters
 	static Quackle::LetterString nonBlankEncode(const QString &qstring);
 
+	// Mixed-case tile notation: uppercase = individual tile, lowercase sequence = digraph tile.
+	static Quackle::LetterString encodeTiles(const QString &qstring);
+
 	static QString uvStringToQString(const UVString &stdWString);
 	static QString letterStringToQString(const Quackle::LetterString &letterString);
 	static QString letterToQString(const Quackle::Letter &letter);

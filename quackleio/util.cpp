@@ -137,6 +137,11 @@ Quackle::LetterString Util::nonBlankEncode(const QString &qstring)
 	return QUACKLE_ALPHABET_PARAMETERS->clearBlankness(encode(qstring));
 }
 
+Quackle::LetterString Util::encodeTiles(const QString &qstring)
+{
+	return QUACKLE_ALPHABET_PARAMETERS->encodeTiles(qstringToString(qstring));
+}
+
 QString Util::letterStringToQString(const Quackle::LetterString &letterString)
 {
 	return uvStringToQString(QUACKLE_ALPHABET_PARAMETERS->userVisible(letterString));

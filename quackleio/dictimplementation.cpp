@@ -51,7 +51,7 @@ Dict::WordList QuackleIO::DictImplementation::query(const QString &query, int fl
 		modifiedQuery.replace(wildcardRegexp, QString());
 	}
 
-	vector<Quackle::LetterString> words(m_generator.anagramLetters(QuackleIO::Util::encode(modifiedQuery), anagramFlags));
+	vector<Quackle::LetterString> words(m_generator.anagramLetters(QuackleIO::Util::encodeTiles(modifiedQuery), anagramFlags));
 	Dict::WordList ret;
 
 	vector<Quackle::LetterString>::const_iterator end = words.end();
