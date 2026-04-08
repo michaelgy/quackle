@@ -229,42 +229,6 @@ void LexiconDialog::addWordsFromDawgRecursive(const LexiconParameters &lexParams
 	} while (!lastchild);
 }
 
-// Returns all variants of 'word' (all-uppercase) with CH/LL/RR substituted as
-// lowercase digraph sequences. The original unchanged form is NOT included —
-// the caller always pushes that itself. Each substitution position is
-// non-overlapping; all 2^n combinations are returned (n = digraph count).
-static QVector<QString> generateDigraphVariants(const QString &word)
-{
-	struct Occurrence { int pos; QString lower; };
-	QVector<Occurrence> occurrences;
-	for (int i = 0; i < word.size() - 1; i++)
-	{
-		QString pair = word.mid(i, 2);
-		if (pair == "CH" || pair == "LL" || pair == "RR")
-		{
-			occurrences.append({i, pair.toLower()});
-			i++; // skip second char of digraph (non-overlapping)
-		}
-	}
-	if (occurrences.isEmpty())
-		return {};
-
-	QVector<QString> variants;
-	int n = occurrences.size();
-	for (int mask = 1; mask < (1 << n); mask++)
-	{
-		QString variant = word;
-		// Apply right-to-left so earlier positions stay valid after replacements
-		for (int j = n - 1; j >= 0; j--)
-		{
-			if (mask & (1 << j))
-				variant.replace(occurrences[j].pos, 2, occurrences[j].lower);
-		}
-		variants.append(variant);
-	}
-	return variants;
-}
-
 void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 {
 	if (!m_wordFactory)
@@ -278,16 +242,14 @@ void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 	SET_QTEXTSTREAM_TO_UTF8(stream);
 	while (!stream.atEnd())
 	{
-		QString line = stream.readLine().trimmed().toUpper();
-		if (line.isEmpty())
+		// Replace spaces with Ñ BEFORE trimming — spaces encode Ñ in some
+		// word lists and trimmed() would strip leading/trailing Ñ.
+		QString word = stream.readLine().replace(' ', QChar(0xD1) /*Ñ*/).trimmed();
+		if (word.isEmpty())
 			continue;
-		QChar firstChar = line[0];
+		QChar firstChar = word[0];
 		if (firstChar != QChar(0xD1) /*Ñ*/ && firstChar < 'A')
 			continue; // allows most punctuation characters as comments
-
-		// Some word lists encode Ñ as a space (e.g. "CA A" = "CAÑA", "AMU U A" = "AMUÑUÑA").
-		// Restore those spaces to Ñ before encoding.
-		QString word = line.replace(' ', QChar(0xD1) /*Ñ*/);
 
 		int playability = 0;
 		for (int i = int(word.size()) - 1; i > 0; i--)
@@ -295,18 +257,12 @@ void LexiconDialog::addWordsFromTextFile(const QString &textFile)
 			if (word[i].isDigit())
 				playability = playability * 10 + word[i].digitValue();
 		}
-		m_wordFactory->pushWord(QuackleIO::Util::qstringToString(word), true, playability);
-
-		// Also push digraph variants (ch/ll/rr) for combined-alphabet support.
-		// Use encodeTiles() + LetterString overload so lowercase digraph sequences
-		// are encoded as single tiles, not blank tiles.
-		for (const QString &variant : generateDigraphVariants(word))
-		{
-			Quackle::LetterString encoded = QUACKLE_ALPHABET_PARAMETERS->encodeTiles(
-				QuackleIO::Util::qstringToString(variant));
-			if (!encoded.empty())
-				m_wordFactory->pushWord(encoded, true, playability);
-		}
+		// Use encodeTiles() so lowercase sequences (ch, ll, rr) are encoded
+		// as single digraph tiles, while uppercase letters are individual tiles.
+		Quackle::LetterString encoded = QUACKLE_ALPHABET_PARAMETERS->encodeTiles(
+			QuackleIO::Util::qstringToString(word));
+		if (!encoded.empty())
+			m_wordFactory->pushWord(encoded, true, playability);
 	}
 }
 
