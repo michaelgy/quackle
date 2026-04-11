@@ -23,6 +23,7 @@
 #include "view.h"
 
 class QLabel;
+class QTabWidget;
 class QTextEdit;
 
 class BagDisplay : public View
@@ -37,11 +38,18 @@ public slots:
 	virtual void positionChanged(const Quackle::GamePosition *position);
 
 protected slots:
-	virtual void showTiles(const Quackle::LongLetterString &tiles);
+	virtual void formatTiles(const Quackle::LongLetterString &tiles, QLabel *label, QTextEdit *textEdit, const QString &labelFormat, const QString &emptyMessage);
 
 private:
-	QLabel *m_label;
-	QTextEdit *m_textEdit;
+	QTabWidget *m_tabWidget;
+
+	// Unseen tiles tab
+	QLabel *m_unseenLabel;
+	QTextEdit *m_unseenTextEdit;
+
+	// Bag tab
+	QLabel *m_bagLabel;
+	QTextEdit *m_bagTextEdit;
 };
 
 #endif

@@ -27,26 +27,53 @@
 #include "bagdisplay.h"
 #include "geometry.h"
 
+static QTextEdit *createTileTextEdit()
+{
+	QTextEdit *textEdit = new QTextEdit;
+	textEdit->setReadOnly(true);
+	textEdit->setFontFamily("Courier");
+	textEdit->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+	return textEdit;
+}
+
+static QWidget *createTab(QLabel **outLabel, QTextEdit **outTextEdit)
+{
+	QWidget *tab = new QWidget;
+	QVBoxLayout *layout = new QVBoxLayout(tab);
+	Geometry::setupInnerLayout(layout);
+
+	*outTextEdit = createTileTextEdit();
+
+	*outLabel = new QLabel;
+	(*outLabel)->setWordWrap(true);
+	(*outLabel)->setBuddy(*outTextEdit);
+	layout->addWidget(*outLabel);
+	layout->addWidget(*outTextEdit);
+
+	layout->setStretchFactor(*outTextEdit, 10);
+
+	return tab;
+}
+
 BagDisplay::BagDisplay(QWidget *parent)
 	: View(parent)
 {
 	QVBoxLayout *layout = new QVBoxLayout(this);
 	Geometry::setupInnerLayout(layout);
 
-	m_textEdit = new QTextEdit;
-	m_textEdit->setReadOnly(true);
-	m_textEdit->setFontFamily("Courier");
-	m_textEdit->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+	m_tabWidget = new QTabWidget;
+	layout->addWidget(m_tabWidget);
 
-	m_label = new QLabel;
-	m_label->setWordWrap(true);
-	m_label->setBuddy(m_textEdit);
-	layout->addWidget(m_label);
-	layout->addWidget(m_textEdit);
+	QWidget *unseenTab = createTab(&m_unseenLabel, &m_unseenTextEdit);
+	m_tabWidget->addTab(unseenTab, tr("Unseen"));
 
-	layout->setStretchFactor(m_textEdit, 10);
+	QWidget *bagTab = createTab(&m_bagLabel, &m_bagTextEdit);
+	m_tabWidget->addTab(bagTab, tr("Bag"));
 
-	showTiles(Quackle::LongLetterString());
+	formatTiles(Quackle::LongLetterString(), m_unseenLabel, m_unseenTextEdit,
+		QString(), tr("&Bag is collapsed in a wrinkled heap on the table"));
+	formatTiles(Quackle::LongLetterString(), m_bagLabel, m_bagTextEdit,
+		QString(), tr("Bag is empty"));
 }
 
 BagDisplay::~BagDisplay()
@@ -55,24 +82,28 @@ BagDisplay::~BagDisplay()
 
 void BagDisplay::positionChanged(const Quackle::GamePosition *position)
 {
-	showTiles(position->unseenBag().tiles());
+	formatTiles(position->unseenBag().tiles(), m_unseenLabel, m_unseenTextEdit,
+		tr("%1 unseen tiles"), tr("&Bag is collapsed in a wrinkled heap on the table"));
+	formatTiles(position->bag().tiles(), m_bagLabel, m_bagTextEdit,
+		tr("%1 tiles in bag"), tr("Bag is empty"));
 
 	// Birthday
 	for (const auto& it : position->players())
 	{
 		if (it.name() == "zorbonauts")
 		{
-			m_label->setText(tr("The bag is collapsed in a transparent dead jellyfish-like heap on the table while flies buzz round"));
+			m_unseenLabel->setText(tr("The bag is collapsed in a transparent dead jellyfish-like heap on the table while flies buzz round"));
 			break;
 		}
 	}
 }
 
-void BagDisplay::showTiles(const Quackle::LongLetterString &tiles)
+void BagDisplay::formatTiles(const Quackle::LongLetterString &tiles, QLabel *label, QTextEdit *textEdit, const QString &labelFormat, const QString &emptyMessage)
 {
 	if (tiles.empty())
 	{
-		m_label->setText(tr("&Bag is collapsed in a wrinkled heap on the table"));
+		label->setText(emptyMessage);
+		textEdit->clear();
 		return;
 	}
 
@@ -87,7 +118,7 @@ void BagDisplay::showTiles(const Quackle::LongLetterString &tiles)
 			counts.insert(*it, 1);
 	}
 
-	QFontMetrics metrics(m_textEdit->currentFont());
+	QFontMetrics metrics(textEdit->currentFont());
 	int maxLineWidth = 0;
 
 	for (QMap<Quackle::Letter, int>::iterator it = counts.begin(); it != counts.end(); ++it)
@@ -106,7 +137,6 @@ void BagDisplay::showTiles(const Quackle::LongLetterString &tiles)
 		}
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
-		// Kill Qt 5.13 deprecation warning without breaking pre-5.11 builds
 		const int lineWidth = metrics.horizontalAdvance(line);
 #else
 		const int lineWidth = metrics.width(line);
@@ -118,16 +148,15 @@ void BagDisplay::showTiles(const Quackle::LongLetterString &tiles)
 		text += "\n";
 	}
 
-	m_label->setText(tr("%1 unseen tiles").arg(tiles.length()));
-	m_textEdit->setPlainText(text);
+	label->setText(labelFormat.arg(tiles.length()));
+	textEdit->setPlainText(text);
 
 	const int minimumMaxLineWidth = 16;
 	if (maxLineWidth < minimumMaxLineWidth)
 		maxLineWidth = minimumMaxLineWidth;
 
-	const int maximumWidth = maxLineWidth + m_textEdit->frameWidth() * 2 + (m_textEdit->verticalScrollBar()->isVisible()? m_textEdit->verticalScrollBar()->width() : 0) + 10;
-	m_textEdit->setMaximumSize(maximumWidth, 26 * 100);
+	const int maximumWidth = maxLineWidth + textEdit->frameWidth() * 2 + (textEdit->verticalScrollBar()->isVisible()? textEdit->verticalScrollBar()->width() : 0) + 10;
+	textEdit->setMaximumSize(maximumWidth, 26 * 100);
 
-	m_textEdit->resize(m_textEdit->maximumSize());
+	textEdit->resize(textEdit->maximumSize());
 }
-
