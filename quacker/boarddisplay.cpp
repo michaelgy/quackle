@@ -203,7 +203,7 @@ void BoardWithQuickEntry::processCommand(const QString &command)
 				else
 					letters += character;
 			}
-			move = Quackle::Move::createPlaceMove(QuackleIO::Util::qstringToString(items.first()), QuackleIO::Util::encode(letters));
+			move = Quackle::Move::createPlaceMove(QuackleIO::Util::qstringToString(items.first()), QuackleIO::Util::encodeTiles(letters));
 		}
 	}
 

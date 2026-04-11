@@ -142,6 +142,16 @@ Quackle::LetterString Util::encodeTiles(const QString &qstring)
 	return QUACKLE_ALPHABET_PARAMETERS->encodeTiles(qstringToString(qstring));
 }
 
+Quackle::LetterString Util::encodeTiles(const QString &qstring, UVString *leftover)
+{
+	return QUACKLE_ALPHABET_PARAMETERS->encodeTiles(qstringToString(qstring), leftover);
+}
+
+bool Util::isTileTextPrefix(const QString &prefix)
+{
+	return QUACKLE_ALPHABET_PARAMETERS->isTileTextPrefix(qstringToString(prefix));
+}
+
 QString Util::letterStringToQString(const Quackle::LetterString &letterString)
 {
 	return uvStringToQString(QUACKLE_ALPHABET_PARAMETERS->userVisible(letterString));
@@ -199,7 +209,9 @@ Quackle::LetterString Util::arrangeLettersForUser(const Quackle::Rack &rack)
 
 Quackle::Rack Util::makeRack(const QString &letters)
 {
-	return Quackle::Rack(QuackleIO::Util::encode(letters.toUpper().replace('.', "?")));
+	QString processed = letters;
+	processed.replace('.', "?");
+	return Quackle::Rack(QuackleIO::Util::encodeTiles(processed));
 }
 
 QString Util::arrangeLettersForUser(const QString &word)

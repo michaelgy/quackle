@@ -226,6 +226,13 @@ private:
 
     // shorter side length of a mark
     QPoint m_tilesOffset;
+
+    // Buffered lowercase input for digraph tile detection (e.g. "ch", "ll", "rr").
+    // Only lowercase chars are buffered; uppercase is processed immediately.
+    QString m_tileInputBuffer;
+    bool m_pendingShiftState;
+    void processSingleTile(Quackle::Letter letter, bool shiftPressed);
+    void flushTileInputBuffer();
 };
 
 class TileWidget

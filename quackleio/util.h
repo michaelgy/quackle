@@ -67,6 +67,12 @@ public:
 	// Mixed-case tile notation: uppercase = individual tile, lowercase sequence = digraph tile.
 	static Quackle::LetterString encodeTiles(const QString &qstring);
 
+	// Like encodeTiles but with leftover support for buffered input.
+	static Quackle::LetterString encodeTiles(const QString &qstring, UVString *leftover);
+
+	// Returns true if prefix could be the start of a multi-char tile text.
+	static bool isTileTextPrefix(const QString &prefix);
+
 	static QString uvStringToQString(const UVString &stdWString);
 	static QString letterStringToQString(const Quackle::LetterString &letterString);
 	static QString letterToQString(const Quackle::Letter &letter);

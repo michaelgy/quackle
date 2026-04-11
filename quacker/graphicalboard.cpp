@@ -100,6 +100,7 @@ GraphicalBoardFrame::GraphicalBoardFrame(QWidget *parent)
     m_board.prepareEmptyBoard();
     m_candidate = Quackle::Move::createNonmove();
     resetArrow();
+    m_pendingShiftState = false;
 }
 
 GraphicalBoardFrame::~GraphicalBoardFrame()
@@ -671,6 +672,12 @@ void GraphicalBoardFrame::setLocalCandidate(const Quackle::Move *candidate)
 
 void GraphicalBoardFrame::backspaceHandler()
 {
+    if (!m_tileInputBuffer.isEmpty())
+    {
+        m_tileInputBuffer.chop(1);
+        return;
+    }
+
     unsigned int hoppedTiles = 0;
     QSize currentTile(m_arrowRoot);
     while (true)
@@ -749,17 +756,20 @@ void GraphicalBoardFrame::backspaceHandler()
 
 void GraphicalBoardFrame::deleteHandler()
 {
+    m_tileInputBuffer.clear();
     const Quackle::Move move = Quackle::Move::createNonmove();
     setLocalCandidate(&move);
 }
 
 void GraphicalBoardFrame::submitHandler()
 {
+    flushTileInputBuffer();
     QTimer::singleShot(0, this, [this] {setGlobalCandidate(nullptr);} );
 }
 
 void GraphicalBoardFrame::commitHandler()
 {
+    flushTileInputBuffer();
     QTimer::singleShot(0, this, SLOT(setAndCommitGlobalCandidate()));
 }
 
@@ -790,7 +800,20 @@ void GraphicalBoardFrame::setAndCommitGlobalCandidate()
         emit commit();
 }
 
-void GraphicalBoardFrame::appendHandler(const QString &text, bool shiftPressed)
+void GraphicalBoardFrame::flushTileInputBuffer()
+{
+    if (m_tileInputBuffer.isEmpty())
+        return;
+
+    // Convert buffered lowercase to uppercase and encode as individual tiles
+    Quackle::LetterString encoded = QuackleIO::Util::encodeTiles(m_tileInputBuffer.toUpper());
+    m_tileInputBuffer.clear();
+
+    for (unsigned int i = 0; i < encoded.length(); ++i)
+        processSingleTile(encoded[i], m_pendingShiftState);
+}
+
+void GraphicalBoardFrame::processSingleTile(Quackle::Letter letter, bool shiftPressed)
 {
     if (!isOnBoard(m_arrowRoot))
         return;
@@ -798,11 +821,12 @@ void GraphicalBoardFrame::appendHandler(const QString &text, bool shiftPressed)
     if (!hasCandidate())
         return;
 
-    Quackle::LetterString appendedLetterString(QuackleIO::Util::encode(text));
-
-    if (appendedLetterString.length() == 0 || Quackle::String::front(appendedLetterString) < QUACKLE_FIRST_LETTER)
+    if (letter < QUACKLE_FIRST_LETTER)
         return;
-    
+
+    Quackle::LetterString appendedLetterString;
+    appendedLetterString += letter;
+
     if (shiftPressed)
         appendedLetterString = Quackle::String::setBlankness(appendedLetterString);
     else
@@ -863,8 +887,54 @@ void GraphicalBoardFrame::appendHandler(const QString &text, bool shiftPressed)
     prettifyAndSetLocalCandidate(newCandidate);
 }
 
+void GraphicalBoardFrame::appendHandler(const QString &text, bool shiftPressed)
+{
+    if (!isOnBoard(m_arrowRoot))
+        return;
+
+    if (!hasCandidate())
+        return;
+
+    // Determine if the typed character is lowercase (potential digraph start)
+    bool isLower = !text.isEmpty() && text.at(0).isLower();
+
+    if (isLower)
+    {
+        // Buffer lowercase chars for potential digraph tile matching
+        m_tileInputBuffer += text;
+        m_pendingShiftState = shiftPressed;
+
+        // Try encoding the full buffer
+        UVString leftover;
+        Quackle::LetterString encoded = QuackleIO::Util::encodeTiles(m_tileInputBuffer, &leftover);
+
+        // Process any fully resolved tiles
+        for (unsigned int i = 0; i < encoded.length(); ++i)
+            processSingleTile(encoded[i], shiftPressed);
+
+        // Update buffer with leftover
+        m_tileInputBuffer = QuackleIO::Util::uvStringToQString(leftover);
+
+        // If leftover is not a valid prefix of any tile, flush it as uppercase
+        if (!m_tileInputBuffer.isEmpty() && !QuackleIO::Util::isTileTextPrefix(m_tileInputBuffer))
+            flushTileInputBuffer();
+    }
+    else
+    {
+        // Uppercase or non-letter: flush any pending buffer first
+        flushTileInputBuffer();
+
+        // Process the uppercase character immediately
+        Quackle::LetterString encoded = QuackleIO::Util::encodeTiles(text);
+        for (unsigned int i = 0; i < encoded.length(); ++i)
+            processSingleTile(encoded[i], shiftPressed);
+    }
+}
+
 void GraphicalBoardFrame::tileClicked(const QSize &tileLocation, const QMouseEvent * /* event */)
 {
+    flushTileInputBuffer();
+
     Quackle::Board::TileInformation info(m_board.tileInformation(tileLocation.height(), tileLocation.width()));
     if (info.tileType == Quackle::Board::LetterTile)
         return;

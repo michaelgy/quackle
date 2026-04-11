@@ -267,6 +267,56 @@ LetterString AlphabetParameters::encodeTiles(const UVString &word) const
 	return ret;
 }
 
+LetterString AlphabetParameters::encodeTiles(const UVString &word, UVString *leftover) const
+{
+	LetterString ret;
+	UVString leftoverQuery;
+	LetterLookupMap::const_iterator lookupEnd = m_letterLookup.end();
+	const UVString::const_iterator end(word.end());
+
+	for (UVString::const_iterator it = word.begin(); it != end; ++it)
+	{
+		UVString query(leftoverQuery);
+		query += *it;
+
+		LetterLookupMap::const_iterator lookupIt = m_letterLookup.find(query);
+		if (lookupIt != lookupEnd)
+		{
+			ret += m_alphabet[lookupIt->second].letter();
+			leftoverQuery.clear();
+		}
+		else
+		{
+			leftoverQuery = query;
+		}
+	}
+
+	if (leftover)
+		*leftover = leftoverQuery;
+
+	return ret;
+}
+
+bool AlphabetParameters::isTileTextPrefix(const UVString &prefix) const
+{
+	if (prefix.empty())
+		return false;
+
+	LetterLookupMap::const_iterator it = m_letterLookup.lower_bound(prefix);
+	for (; it != m_letterLookup.end(); ++it)
+	{
+		const UVString &key = it->first;
+		if (key.length() <= prefix.length())
+			continue;
+		if (key.substr(0, prefix.length()) == prefix)
+			return true;
+		// Sorted map: if key no longer starts with prefix, no further entries will
+		if (key.substr(0, prefix.length()) > prefix)
+			break;
+	}
+	return false;
+}
+
 string AlphabetParameters::findAlphabetFile(const string &alphabet)
 {
 	return DataManager::self()->findDataFile("alphabets", alphabet + ".quackle_alphabet");

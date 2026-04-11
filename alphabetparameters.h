@@ -285,6 +285,13 @@ public:
 	// Blank-tile semantics (blankText lookup) are intentionally skipped.
 	LetterString encodeTiles(const UVString &word) const;
 
+	// Like encodeTiles(), but stores incomplete trailing sequences in leftover.
+	LetterString encodeTiles(const UVString &word, UVString *leftover) const;
+
+	// Returns true if 'prefix' is a proper prefix of any tile's text() field.
+	// Used by UI to decide whether to buffer keystrokes for digraph input.
+	bool isTileTextPrefix(const UVString &prefix) const;
+
 	// a convenience field; this is unused by libquackle
 	string alphabetName() const;
 	void setAlphabetName(const string &name);
