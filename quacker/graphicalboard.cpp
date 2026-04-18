@@ -1544,13 +1544,13 @@ MarkWidget::~MarkWidget()
 void MarkWidget::setRow(int row)
 {
     m_horizontal = false;
-    m_letterText = QString::number(row);
+    m_letterText = QChar('A' + row - 1);
 }
 
 void MarkWidget::setCol(int col)
 {
     m_horizontal = true;
-    m_letterText = QChar('A' + col - 1);
+    m_letterText = QString::number(col);
 }
 
 void MarkWidget::setCapstone()

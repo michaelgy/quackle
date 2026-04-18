@@ -574,27 +574,31 @@ UVString Board::toString() const
 {
 	UVOStringStream ss;
 
-	ss << "   ";
+	ss << "    ";
 
 	for (int col = 0; col < m_width; ++col)
-		ss << (UVChar)(MARK_UV('A') + col) << " ";
+	{
+		if ((col + 1) < 10)
+			ss << ' ' << col + 1 << ' ';
+		else
+			ss << col + 1 << ' ';
+	}
 
 	ss << MARK_UV('\n') << "   ";
 
 	for (int col = 0; col < m_width; ++col)
-		ss << "--";
+		ss << "---";
 
 	ss << MARK_UV('\n');
 
 	for (int row = 0; row < m_height; row++)
 	{
-		if ((row + 1) < 10)
-			ss << ' ' << row + 1 << '|';
-		else
-			ss << row + 1 << '|';
+		ss << ' ' << (UVChar)(MARK_UV('A') + row) << '|';
 
 		for (int col = 0; col < m_width; col++)
 		{
+			ss << ' ';
+
 			if (m_letters[row][col] != QUACKLE_NULL_MARK)
 			{
 				ss << QUACKLE_ALPHABET_PARAMETERS->userVisible(m_letters[row][col]);
@@ -617,9 +621,7 @@ UVString Board::toString() const
 					ss << ' ';
 			}
 
-			if (col < width() - 1)
-				ss << ' ';
-
+			ss << ' ';
 		}
 
 		ss << '|' << MARK_UV('\n');
@@ -628,7 +630,7 @@ UVString Board::toString() const
 	ss << "   ";
 
 	for (int col = 0; col < m_width; ++col)
-		ss << "--";
+		ss << "---";
 
 	return ss.str();
 }
@@ -649,13 +651,13 @@ UVString Board::htmlBoard(const int tileSize) const
 	ss << "<tr>\n";
 	ss << "<td bgcolor=\"" << markBgcolor << "\" " << centerAlign << ">" << "&nbsp;" << "</td>";
 	for (int col = 0; col < m_width; ++col)
-		ss << "<td width=" << tdWidth << " bgcolor=\"" << markBgcolor << "\" " << centerAlign << ">" << (UVChar)(MARK_UV('A') + col) << "</td>";
+		ss << "<td width=" << tdWidth << " bgcolor=\"" << markBgcolor << "\" " << centerAlign << ">" << col + 1 << "</td>";
 	ss << "</tr>\n";
 
 	for (int row = 0; row < m_height; row++)
 	{
 		ss << "<tr>\n";
-		ss << "<td height=" << tdHeight << " bgcolor=\"" << markBgcolor << "\" " << centerAlign << ">" << row + 1 << "</td>\n";
+		ss << "<td height=" << tdHeight << " bgcolor=\"" << markBgcolor << "\" " << centerAlign << ">" << (UVChar)(MARK_UV('A') + row) << "</td>\n";
 
 		for (int col = 0; col < m_width; col++)
 		{

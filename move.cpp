@@ -224,13 +224,13 @@ UVString Move::positionString() const
 
 	if (horizontal)
 	{
-		ss << startrow + 1;
-		ss << (char)('A' + startcol);
+		ss << (char)('A' + startrow);
+		ss << startcol + 1;
 	}
 	else
 	{
-		ss << (char)('A' + startcol);
-		ss << startrow + 1;
+		ss << startcol + 1;
+		ss << (char)('A' + startrow);
 	}
 
 	return ss.str();
@@ -244,21 +244,21 @@ Move Move::createPlaceMove(UVString placeString, LetterString word)
 	UVString rowString, colString;
 	if (iswdigit(placeString[0]))
 	{
-		rowString = placeString.substr(0, iswdigit(placeString[1])? 2 : 1);
-		colString = placeString.substr(iswdigit(placeString[1])? 2 : 1);
+		horizontal = false;
+		colString = placeString.substr(0, iswdigit(placeString[1])? 2 : 1);
+		rowString = placeString.substr(iswdigit(placeString[1])? 2 : 1);
 	}
 	else
 	{
-		horizontal = false;
-		colString = placeString.substr(0, 1);
-		rowString = placeString.substr(1);
+		rowString = placeString.substr(0, 1);
+		colString = placeString.substr(1);
 	}
 
-	UVStringStream ss(rowString);
-	ss >> row;
-	--row; // zero index it
+	UVStringStream ss(colString);
+	ss >> column;
+	--column; // zero index it
 
-	column = towupper(colString[0]) - MARK_UV('A');
+	row = towupper(rowString[0]) - MARK_UV('A');
 
 	if (row < 0 || row > 9999)
 		row = 0;

@@ -89,7 +89,7 @@ void testGame()
 
 	if (setupRetroPosition)
 	{
-		game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("8c"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AMNION"))));
+		game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("h3"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AMNION"))));
 		game.currentPosition().setCurrentPlayerRack(Quackle::Rack(QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("L"))));
 		UVcout << "current rack: " << game.currentPosition().currentPlayer().rack() << endl;
 		game.currentPosition().kibitz(10);
@@ -175,7 +175,7 @@ void testBag(Quackle::Game &game)
 	game.currentPosition().setCurrentPlayerRack(Quackle::Rack(QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AAAAAAA"))));
 	UVcout << "current player rack set to: " << game.currentPosition().currentPlayer().rack() << endl;
 	UVcout << "current bag now " << game.currentPosition().bag() << endl;
-	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("8d"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("PEAFOwL"))));
+	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("h4"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("PEAFOwL"))));
 	UVcout << "current bag after PEAFOwL " << game.currentPosition().bag() << endl;
 }
 
@@ -242,12 +242,12 @@ void testSimulation(Quackle::Game &game)
 
 void testValidator(Quackle::Game &game)
 {
-	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("8d"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("MANIA"))));
-	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("7c"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("RANI"))));
-	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("f6"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("P..ION"))));
-	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("10b"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("STAT.R"))));
+	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("h4"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("MANIA"))));
+	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("g3"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("RANI"))));
+	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("6f"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("P..ION"))));
+	game.commitMove(Quackle::Move::createPlaceMove(MARK_UV("2j"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("STAT.R"))));
 	game.currentPosition().setCurrentPlayerRack(Quackle::Rack(QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AIAIAIAI"))));
 
-	UVcout << game.currentPosition().board().allWordsFormedBy(Quackle::Move::createPlaceMove(MARK_UV("9c"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AI"))));
+	UVcout << game.currentPosition().board().allWordsFormedBy(Quackle::Move::createPlaceMove(MARK_UV("i3"), QUACKLE_ALPHABET_PARAMETERS->encode(MARK_UV("AI"))));
 }
 
