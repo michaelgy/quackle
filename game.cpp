@@ -1109,6 +1109,13 @@ void GamePosition::adjustScoresToFinishGame()
 
 	m_moveMade = Move::createUnusedTilesBonus(clobberedTiles, addand);
 	m_committedMove = m_moveMade;
+
+	for (auto &it : m_players)
+	{
+		if (it == currentPlayer())
+			continue;
+		it.addToScore(-it.rack().score());
+	}
 }
 
 int GamePosition::deadwood(LetterString *tiles) const
@@ -1125,7 +1132,7 @@ int GamePosition::deadwood(LetterString *tiles) const
 		*tiles += it.rack().tiles();
 	}
 
-	return addand * 2;
+	return addand;
 }
 
 bool GamePosition::doesMoveEndGame(const Move &move) const

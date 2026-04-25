@@ -89,7 +89,11 @@ void String::counts(const LetterString &letterString, char *countsArray)
 
 	const LetterString::const_iterator end(letterString.end());
 	for (LetterString::const_iterator it = letterString.begin(); it != end; ++it)
-		countsArray[(int)*it]++;
+	{
+		const int idx = QUACKLE_ALPHABET_PARAMETERS->clearBlankness(*it);
+		if (idx >= 0 && idx < QUACKLE_FIRST_LETTER + QUACKLE_MAXIMUM_ALPHABET_SIZE)
+			countsArray[idx]++;
+	}
 }
 
 void String::counts(const LongLetterString &letterString, char *countsArray)
@@ -99,7 +103,11 @@ void String::counts(const LongLetterString &letterString, char *countsArray)
 
 	const LongLetterString::const_iterator end(letterString.end());
 	for (LongLetterString::const_iterator it = letterString.begin(); it != end; ++it)
-		countsArray[(int)*it]++;
+	{
+		const int idx = QUACKLE_ALPHABET_PARAMETERS->clearBlankness(*it);
+		if (idx >= 0 && idx < QUACKLE_FIRST_LETTER + QUACKLE_MAXIMUM_ALPHABET_SIZE)
+			countsArray[idx]++;
+	}
 }
 
 ////////////

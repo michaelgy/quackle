@@ -26,6 +26,77 @@
 
 using namespace QuackleIO;
 
+// GCG files use the legacy notation: digit-first = horizontal (row digit, col letter),
+// letter-first = vertical (col letter, row digit).
+// The in-app notation is inverted: letter-first = horizontal (row letter, col digit),
+// digit-first = vertical (col digit, row letter).
+// Both encode the same internal (row, col) — converting requires re-mapping the parts.
+static QString convertOldGCGToNew(const QString &oldPos)
+{
+	if (oldPos.isEmpty())
+		return oldPos;
+
+	int row = 0, col = 0;
+	bool horizontal;
+
+	if (oldPos.at(0).isDigit())
+	{
+		horizontal = true;
+		int i = 0;
+		while (i < oldPos.size() && oldPos.at(i).isDigit())
+			++i;
+		row = oldPos.left(i).toInt() - 1;
+		if (i < oldPos.size())
+			col = oldPos.at(i).toUpper().toLatin1() - 'A';
+	}
+	else
+	{
+		horizontal = false;
+		col = oldPos.at(0).toUpper().toLatin1() - 'A';
+		row = oldPos.mid(1).toInt() - 1;
+	}
+
+	const QChar rowLetter('A' + row);
+	const QString colDigit = QString::number(col + 1);
+
+	if (horizontal)
+		return QString(rowLetter) + colDigit;
+	return colDigit + QString(rowLetter);
+}
+
+static QString convertNewGCGToOld(const QString &newPos)
+{
+	if (newPos.isEmpty())
+		return newPos;
+
+	int row = 0, col = 0;
+	bool horizontal;
+
+	if (newPos.at(0).isDigit())
+	{
+		horizontal = false;
+		int i = 0;
+		while (i < newPos.size() && newPos.at(i).isDigit())
+			++i;
+		col = newPos.left(i).toInt() - 1;
+		if (i < newPos.size())
+			row = newPos.at(i).toUpper().toLatin1() - 'A';
+	}
+	else
+	{
+		horizontal = true;
+		row = newPos.at(0).toUpper().toLatin1() - 'A';
+		col = newPos.mid(1).toInt() - 1;
+	}
+
+	const QString rowDigit = QString::number(row + 1);
+	const QChar colLetter('A' + col);
+
+	if (horizontal)
+		return rowDigit + QString(colLetter);
+	return QString(colLetter) + rowDigit;
+}
+
 GCGIO::GCGIO()
 {
 }
@@ -245,7 +316,7 @@ Quackle::Game *GCGIO::read(QTextStream &stream, int flags)
 			}
 			else
 			{
-				const QString positionString = firstMoveBite;
+				const QString positionString = convertOldGCGToNew(firstMoveBite);
 
 				strings.pop_front();
 
@@ -381,7 +452,14 @@ void GCGIO::write(const Quackle::Game &game, QTextStream &stream)
 			QString rackString = Util::letterStringToQString((*it).currentPlayer().rack().alphaTiles());
 			if (move.action == Quackle::Move::UnusedTilesBonusError)
 				rackString = QString();
-			stream << ">" << Util::uvStringToQString((*it).currentPlayer().abbreviatedName()) << ": " << rackString << " " << Util::uvStringToQString(move.toString()) << " +" << outputScore << " " << outputScore + (*it).currentPlayer().score() << m_endl;
+			QString moveStr = Util::uvStringToQString(move.toString());
+			if (move.action == Quackle::Move::Place || move.action == Quackle::Move::PlaceError)
+			{
+				const int spaceIdx = moveStr.indexOf(' ');
+				if (spaceIdx > 0)
+					moveStr = convertNewGCGToOld(moveStr.left(spaceIdx)) + moveStr.mid(spaceIdx);
+			}
+			stream << ">" << Util::uvStringToQString((*it).currentPlayer().abbreviatedName()) << ": " << rackString << " " << moveStr << " +" << outputScore << " " << outputScore + (*it).currentPlayer().score() << m_endl;
 
 			if (move.isChallengedPhoney())
 			{

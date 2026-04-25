@@ -61,7 +61,7 @@ QString Util::moveToDetailedString(const Quackle::Move &move)
 	
 	case Quackle::Move::UnusedTilesBonusError:
 	case Quackle::Move::UnusedTilesBonus:
-		ret = QObject::tr("2*(%1)").arg(letterStringToQString(Util::alphagram(move.usedTiles())));
+		ret = QObject::tr("(%1)").arg(letterStringToQString(Util::alphagram(move.usedTiles())));
 		if (move.action == Quackle::Move::UnusedTilesBonusError)
 			ret += " [Endgame Error]";
 		break;
